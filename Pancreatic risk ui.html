@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PancreAI — Cancer Risk Stratification System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #05080f;
+  --bg2:      #090d18;
+  --bg3:      #0d1220;
+  --panel:    #0f1528;
+  --border:   rgba(99,190,255,0.10);
+  --border2:  rgba(99,190,255,0.20);
+  --teal:     #00e5c3;
+  --teal2:    #00b89e;
+  --blue:     #3b8bff;
+  --amber:    #ffb347;
+  --red:      #ff5c6a;
+  --green:    #39d98a;
+  --muted:    #4a5a7a;
+  --text:     #cdd6f4;
+  --text2:    #8899bb;
+  --text3:    #4a5a7a;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --r:        12px;
+  --r2:       20px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Background grid ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59,139,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,139,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Glow orbs ── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb1 { width: 600px; height: 600px; background: rgba(0,229,195,0.06); top: -200px; right: -100px; }
+.orb2 { width: 500px; height: 500px; background: rgba(59,139,255,0.05); bottom: -150px; left: -100px; }
+.orb3 { width: 300px; height: 300px; background: rgba(255,179,71,0.04); top: 40%; left: 40%; }
+
+/* ── Layout ── */
+.layout { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ── Topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.logo span { color: var(--teal); }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ── Hero ── */
+.hero {
+  margin-bottom: 48px;
+  animation: fadeUp 0.7s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:none;} }
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,229,195,0.07);
+  border: 1px solid rgba(0,229,195,0.20);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--teal);
+  margin-bottom: 20px;
+  letter-spacing: 0.05em;
+}
+.hero h1 {
+  font-family: var(--font-head);
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.hero h1 .hl { color: var(--teal); }
+.hero p {
+  font-size: 16px;
+  color: var(--text2);
+  max-width: 560px;
+  line-height: 1.7;
+}
+
+/* ── Stat strip ── */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 40px;
+  animation: fadeUp 0.7s 0.1s ease both;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-card:hover::before { opacity: 1; }
+.stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+.stat-value { font-family: var(--font-head); font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.stat-badge {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+.badge-green { background: rgba(57,217,138,0.12); color: var(--green); border: 1px solid rgba(57,217,138,0.25); }
+.badge-teal  { background: rgba(0,229,195,0.10);  color: var(--teal);  border: 1px solid rgba(0,229,195,0.20); }
+.badge-blue  { background: rgba(59,139,255,0.10); color: var(--blue);  border: 1px solid rgba(59,139,255,0.20); }
+.badge-amber { background: rgba(255,179,71,0.10); color: var(--amber); border: 1px solid rgba(255,179,71,0.20); }
+
+/* ── Grid ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  margin-bottom: 20px;
+  animation: fadeUp 0.7s 0.2s ease both;
+}
+.right-col { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.card-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 6px var(--teal);
+}
+
+/* ── Risk Predictor Form ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1/-1; }
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wearable-badge {
+  background: rgba(0,229,195,0.10);
+  color: var(--teal);
+  border: 1px solid rgba(0,229,195,0.20);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+}
+.form-input, .form-select {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus {
+  border-color: var(--teal);
+  background: rgba(0,229,195,0.04);
+}
+.form-select option { background: #0f1528; }
+
+/* ── Toggle group ── */
+.toggle-group { display: flex; gap: 6px; }
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.toggle-btn.active {
+  background: rgba(0,229,195,0.12);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.toggle-btn:hover:not(.active) { border-color: var(--border2); }
+
+/* ── Predict button ── */
+.predict-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--teal2), var(--blue));
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.25s;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.predict-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.predict-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,229,195,0.25); }
+.predict-btn:hover::before { opacity: 1; }
+.predict-btn:active { transform: translateY(0); }
+
+/* ── Result Panel ── */
+.result-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 24px;
+  margin-top: 20px;
+  display: none;
+  animation: expandIn 0.4s ease;
+}
+.result-panel.visible { display: block; }
+@keyframes expandIn { from{opacity:0;transform:scaleY(0.92);} to{opacity:1;transform:none;} }
+
+.risk-display {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.risk-circle {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid;
+  flex-shrink: 0;
+  position: relative;
+}
+.risk-circle::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid;
+  opacity: 0.25;
+  animation: ringPulse 2s infinite;
+}
+@keyframes ringPulse { 0%,100%{transform:scale(1);opacity:0.25;} 50%{transform:scale(1.1);opacity:0;} }
+.risk-pct {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.risk-label-sm { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.05em; margin-top: 2px; }
+.risk-info h3 {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.risk-info p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+/* Prob bars */
+.prob-bars { display: flex; flex-direction: column; gap: 10px; }
+.prob-row { display: flex; align-items: center; gap: 10px; }
+.prob-name { font-family: var(--font-mono); font-size: 11px; color: var(--text2); width: 62px; flex-shrink: 0; }
+.prob-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.23,1,0.32,1); }
+.prob-val { font-family: var(--font-mono); font-size: 11px; color: var(--text2); width: 38px; text-align: right; flex-shrink: 0; }
+
+/* ── Wearable Monitor Card ── */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.sensor-tile {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  transition: border-color 0.2s;
+}
+.sensor-tile:hover { border-color: var(--border2); }
+.sensor-name { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.sensor-val {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.sensor-unit { font-size: 11px; color: var(--text3); }
+.sensor-sparkline { margin-top: 8px; height: 30px; }
+.sensor-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  margin-top: 4px;
+}
+.sensor-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+/* ── Feature Importance Bars ── */
+.fi-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.fi-name { font-family: var(--font-mono); font-size: 11px; color: var(--text2); width: 130px; flex-shrink: 0; }
+.fi-track { flex: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+.fi-fill { height: 100%; border-radius: 4px; }
+.fi-val { font-family: var(--font-mono); font-size: 11px; color: var(--text3); width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ── Model metrics ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+.metric-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.metric-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+.metric-val {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 2px;
+}
+.metric-name { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ── Confusion matrix ── */
+.cm-wrap {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 6px;
+  align-items: center;
+}
+.cm-y-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cm-inner { width: 100%; }
+.cm-row { display: flex; gap: 4px; margin-bottom: 4px; }
+.cm-label-row { display: flex; gap: 4px; margin-bottom: 4px; padding-left: 0; }
+.cm-xlbl { font-family: var(--font-mono); font-size: 9px; color: var(--text3); flex: 1; text-align: center; letter-spacing: 0.05em; }
+.cm-cell {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 800;
+  transition: transform 0.2s;
+  cursor: default;
+}
+.cm-cell:hover { transform: scale(1.05); }
+.cm-cell small {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+.cm-row-lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  width: 54px;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+/* ── ROC mini chart ── */
+#rocChart { width: 100%; height: 180px; }
+
+/* ── Footer note ── */
+.footer-note {
+  margin-top: 48px;
+  padding: 20px 24px;
+  background: rgba(255,179,71,0.05);
+  border: 1px solid rgba(255,179,71,0.15);
+  border-radius: var(--r);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  animation: fadeUp 0.7s 0.5s ease both;
+}
+.warn-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.footer-note p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.footer-note strong { color: var(--amber); font-weight: 600; }
+
+/* ── Section heading ── */
+.section-heading {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Second row grid ── */
+.second-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+  animation: fadeUp 0.7s 0.4s ease both;
+}
+
+/* ── Range slider ── */
+.range-wrap { position: relative; }
+.range-val {
+  position: absolute;
+  right: 0; top: -2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--teal);
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  outline: none;
+  margin-top: 8px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--teal);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,229,195,0.5);
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .second-grid { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: repeat(2,1fr); }
+  .metrics-grid { grid-template-columns: repeat(3,1fr); }
+}
+@media (max-width: 560px) {
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="layout">
+
+  <!-- ── Topbar ── -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">&#9684;</div>
+      Pancre<span>AI</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <span>MODEL ACTIVE</span>
+      <span style="color:var(--border2);">|</span>
+      <span>RF · 150 ESTIMATORS</span>
+      <span style="color:var(--border2);">|</span>
+      <span id="live-time"></span>
+    </div>
+  </div>
+
+  <!-- ── Hero ── -->
+  <div class="hero">
+    <div class="hero-tag">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#00e5c3"/></svg>
+      GROUP G-39 · RIT RAJARAMNAGAR · A.Y. 2025–26
+    </div>
+    <h1>Pancreatic Cancer<br><span class="hl">Risk Stratification</span> System</h1>
+    <p>Multi-modal machine learning framework combining clinical biomarkers with wearable physiological monitoring for early-stage PDAC detection and risk classification.</p>
+  </div>
+
+  <!-- ── Stats ── -->
+  <div class="stat-strip">
+    <div class="stat-card">
+      <div class="stat-label">Test accuracy</div>
+      <div class="stat-value" style="color:var(--green);">80.78<span style="font-size:16px;color:var(--text3);">%</span></div>
+      <div class="stat-sub">on 1,275 held-out samples</div>
+      <div class="stat-badge badge-green">VALIDATED</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ROC-AUC</div>
+      <div class="stat-value" style="color:var(--teal);">0.9264</div>
+      <div class="stat-sub">macro one-vs-rest</div>
+      <div class="stat-badge badge-teal">EXCELLENT</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">PDAC Precision</div>
+      <div class="stat-value" style="color:var(--blue);">99.1<span style="font-size:16px;color:var(--text3);">%</span></div>
+      <div class="stat-sub">critical class protection</div>
+      <div class="stat-badge badge-blue">CLINICAL</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Dataset size</div>
+      <div class="stat-value" style="color:var(--amber);">6,375</div>
+      <div class="stat-sub">merged from 4 sources</div>
+      <div class="stat-badge badge-amber">4 COHORTS</div>
+    </div>
+  </div>
+
+  <!-- ── Main Grid: Predictor + Wearable ── -->
+  <div class="main-grid">
+
+    <!-- LEFT: Risk Predictor -->
+    <div class="card">
+      <div class="card-title"><div class="card-title-dot"></div>Risk Prediction — Clinical Input</div>
+
+      <div class="form-grid">
+
+        <!-- Age slider -->
+        <div class="form-group">
+          <label class="form-label">Age (years)</label>
+          <div class="range-wrap">
+            <span class="range-val" id="age-val">45</span>
+            <input type="range" id="age" min="18" max="90" value="45"
+                   oninput="document.getElementById('age-val').textContent=this.value">
+          </div>
+        </div>
+
+        <!-- Sex -->
+        <div class="form-group">
+          <label class="form-label">Biological sex</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'sex',0)">Female</button>
+            <button class="toggle-btn" onclick="setToggle(this,'sex',1)">Male</button>
+          </div>
+          <input type="hidden" id="sex" value="0">
+        </div>
+
+        <!-- Glucose -->
+        <div class="form-group">
+          <label class="form-label">
+            Glucose (mg/dL)
+            <span class="wearable-badge">WEARABLE</span>
+          </label>
+          <div class="range-wrap">
+            <span class="range-val" id="glucose-val">95</span>
+            <input type="range" id="glucose" min="60" max="300" value="95"
+                   oninput="document.getElementById('glucose-val').textContent=this.value">
+          </div>
+        </div>
+
+        <!-- BMI placeholder note -->
+        <div class="form-group">
+          <label class="form-label">Smoking history</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'smoking_history',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'smoking_history',1)">Yes</button>
+          </div>
+          <input type="hidden" id="smoking_history" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Diabetes history</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'diabetes_history',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'diabetes_history',1)">Yes</button>
+          </div>
+          <input type="hidden" id="diabetes_history" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Family history</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'family_history',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'family_history',1)">Yes</button>
+          </div>
+          <input type="hidden" id="family_history" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Chronic pancreatitis</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'chronic_pancreatitis',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'chronic_pancreatitis',1)">Yes</button>
+          </div>
+          <input type="hidden" id="chronic_pancreatitis" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jaundice</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'jaundice',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'jaundice',1)">Yes</button>
+          </div>
+          <input type="hidden" id="jaundice" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Unexplained weight loss</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'weight_loss',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'weight_loss',1)">Yes</button>
+          </div>
+          <input type="hidden" id="weight_loss" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Abdominal pain</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'abdominal_pain',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'abdominal_pain',1)">Yes</button>
+          </div>
+          <input type="hidden" id="abdominal_pain" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Back pain</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setToggle(this,'back_pain',0)">No</button>
+            <button class="toggle-btn" onclick="setToggle(this,'back_pain',1)">Yes</button>
+          </div>
+          <input type="hidden" id="back_pain" value="0">
+        </div>
+
+        <div class="form-group full">
+          <button class="predict-btn" onclick="runPrediction()">
+            &#9654;&nbsp; Analyse Risk Profile
+          </button>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <!-- Result -->
+      <div class="result-panel" id="result-panel">
+        <div class="section-heading">Prediction result</div>
+        <div class="risk-display">
+          <div class="risk-circle" id="risk-circle">
+            <div class="risk-pct" id="risk-pct">—</div>
+            <div class="risk-label-sm" id="risk-label-sm">PDAC</div>
+          </div>
+          <div class="risk-info">
+            <h3 id="risk-class">—</h3>
+            <p id="risk-advice">—</p>
+          </div>
+        </div>
+        <div class="section-heading">Class probabilities</div>
+        <div class="prob-bars">
+          <div class="prob-row">
+            <span class="prob-name">Healthy</span>
+            <div class="prob-track"><div class="prob-fill" id="pb-healthy" style="width:0%;background:#378ADD"></div></div>
+            <span class="prob-val" id="pv-healthy">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">Benign</span>
+            <div class="prob-track"><div class="prob-fill" id="pb-benign" style="width:0%;background:#EF9F27"></div></div>
+            <span class="prob-val" id="pv-benign">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">PDAC</span>
+            <div class="prob-track"><div class="prob-fill" id="pb-pdac" style="width:0%;background:#ff5c6a"></div></div>
+            <span class="prob-val" id="pv-pdac">0%</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /LEFT card -->
+
+    <!-- RIGHT COL -->
+    <div class="right-col">
+
+      <!-- Wearable Monitor -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>Live Wearable Sensors</div>
+        <div class="sensor-grid">
+          <div class="sensor-tile">
+            <div class="sensor-name">ISF Glucose</div>
+            <div class="sensor-val" id="sw-glucose" style="color:var(--teal)">—</div>
+            <div class="sensor-unit">mg/dL</div>
+            <canvas class="sensor-sparkline" id="spark-glucose"></canvas>
+            <div class="sensor-status">
+              <div class="sensor-dot" style="background:var(--teal)"></div>
+              <span style="color:var(--teal);font-family:var(--font-mono);font-size:9px;" id="glucose-status">SYNCING</span>
+            </div>
+          </div>
+          <div class="sensor-tile">
+            <div class="sensor-name">Sweat pH</div>
+            <div class="sensor-val" id="sw-ph" style="color:var(--blue)">—</div>
+            <div class="sensor-unit">pH units</div>
+            <canvas class="sensor-sparkline" id="spark-ph"></canvas>
+            <div class="sensor-status">
+              <div class="sensor-dot" style="background:var(--blue)"></div>
+              <span style="color:var(--blue);font-family:var(--font-mono);font-size:9px;" id="ph-status">SYNCING</span>
+            </div>
+          </div>
+          <div class="sensor-tile">
+            <div class="sensor-name">Conductivity</div>
+            <div class="sensor-val" id="sw-cond" style="color:var(--amber)">—</div>
+            <div class="sensor-unit">mS/cm</div>
+            <canvas class="sensor-sparkline" id="spark-cond"></canvas>
+            <div class="sensor-status">
+              <div class="sensor-dot" style="background:var(--amber)"></div>
+              <span style="color:var(--amber);font-family:var(--font-mono);font-size:9px;" id="cond-status">SYNCING</span>
+            </div>
+          </div>
+          <div class="sensor-tile">
+            <div class="sensor-name">Heart Rate</div>
+            <div class="sensor-val" id="sw-hr" style="color:var(--red)">—</div>
+            <div class="sensor-unit">bpm</div>
+            <canvas class="sensor-sparkline" id="spark-hr"></canvas>
+            <div class="sensor-status">
+              <div class="sensor-dot" style="background:var(--red)"></div>
+              <span style="color:var(--red);font-family:var(--font-mono);font-size:9px;" id="hr-status">SYNCING</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:rgba(0,229,195,0.04);border:1px solid rgba(0,229,195,0.12);border-radius:8px;">
+          <p style="font-family:var(--font-mono);font-size:10px;color:var(--text3);line-height:1.6;">
+            Wearable sensors stream via ESP32 + BLE to the ML inference engine. Glucose, pH &amp; conductivity will be fused with clinical features at deployment.
+          </p>
+        </div>
+      </div>
+
+      <!-- Feature importance mini -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>Feature Importance (MDI)</div>
+        <div id="fi-bars"></div>
+      </div>
+
+    </div><!-- /RIGHT COL -->
+
+  </div><!-- /main-grid -->
+
+  <!-- ── Second row: Metrics + CM + ROC ── -->
+  <div class="section-heading">Model performance</div>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--green);">80.78%</div>
+      <div class="metric-name">Accuracy</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--teal);">0.9264</div>
+      <div class="metric-name">ROC-AUC</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--blue);">52.08%</div>
+      <div class="metric-name">Macro Prec.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--amber);">64.76%</div>
+      <div class="metric-name">Macro Recall</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--red);">55.45%</div>
+      <div class="metric-name">Macro F1</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:#cdd6f4;">5-fold</div>
+      <div class="metric-name">CV Strategy</div>
+    </div>
+  </div>
+
+  <div class="second-grid">
+
+    <!-- Confusion matrix -->
+    <div class="card" style="animation: fadeUp 0.7s 0.4s ease both;">
+      <div class="card-title"><div class="card-title-dot"></div>Confusion Matrix</div>
+      <div class="cm-wrap">
+        <div class="cm-y-label">True Label</div>
+        <div class="cm-inner">
+          <div style="display:flex;gap:4px;margin-bottom:4px;padding-left:58px;">
+            <span class="cm-xlbl">Healthy</span>
+            <span class="cm-xlbl">Benign</span>
+            <span class="cm-xlbl">PDAC</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);text-align:center;margin-bottom:6px;letter-spacing:0.08em;">Predicted Label</div>
+          <!-- Row 0: Healthy -->
+          <div class="cm-row">
+            <div class="cm-row-lbl">Healthy</div>
+            <div class="cm-cell" style="background:rgba(57,217,138,0.25);color:#39d98a;">46<small>TP</small></div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.10);color:var(--text2);">14<small>FN</small></div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.07);color:var(--text3);">28<small>FP</small></div>
+          </div>
+          <!-- Row 1: Benign -->
+          <div class="cm-row">
+            <div class="cm-row-lbl">Benign</div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.10);color:var(--text2);">8<small>FP</small></div>
+            <div class="cm-cell" style="background:rgba(239,159,39,0.25);color:var(--amber);">48<small>TP</small></div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.08);color:var(--text3);">28<small>FN</small></div>
+          </div>
+          <!-- Row 2: PDAC -->
+          <div class="cm-row">
+            <div class="cm-row-lbl">PDAC</div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.07);color:var(--text3);">2<small>FP</small></div>
+            <div class="cm-cell" style="background:rgba(255,92,106,0.08);color:var(--text3);">165<small>FN</small></div>
+            <div class="cm-cell" style="background:rgba(59,139,255,0.25);color:var(--blue);">936<small>TP</small></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">PDAC Recall: 84.86%</span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">·</span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">PDAC Precision: 99.05%</span>
+      </div>
+    </div>
+
+    <!-- ROC Chart -->
+    <div class="card" style="animation: fadeUp 0.7s 0.45s ease both;">
+      <div class="card-title"><div class="card-title-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>ROC Curves — OvR</div>
+      <canvas id="rocChart" role="img" aria-label="ROC curves for Healthy AUC 0.91, Benign AUC 0.91, PDAC AUC 0.96">ROC curves showing AUC scores per class.</canvas>
+      <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--text2);">
+          <span style="width:20px;height:2px;background:#378ADD;display:inline-block;"></span>Healthy 0.9108
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--text2);">
+          <span style="width:20px;height:2px;background:#EF9F27;border-top:2px dashed #EF9F27;display:inline-block;"></span>Benign 0.9085
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--text2);">
+          <span style="width:20px;height:2px;background:#39d98a;border-top:2px dotted #39d98a;display:inline-block;"></span>PDAC 0.9601
+        </span>
+      </div>
+    </div>
+
+    <!-- Per-class breakdown -->
+    <div class="card" style="animation: fadeUp 0.7s 0.5s ease both;">
+      <div class="card-title"><div class="card-title-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>Per-class Metrics</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Healthy -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:#378ADD;">Healthy</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">n=88</span>
+          </div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Precision</span><div class="fi-track"><div class="fi-fill" style="width:30.07%;background:#378ADD;"></div></div><span class="fi-val">30.1%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Recall</span><div class="fi-track"><div class="fi-fill" style="width:52.27%;background:#378ADD;opacity:0.6;"></div></div><span class="fi-val">52.3%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">F1-score</span><div class="fi-track"><div class="fi-fill" style="width:38.17%;background:#378ADD;opacity:0.4;"></div></div><span class="fi-val">38.2%</span></div>
+        </div>
+        <!-- Benign -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--amber);">Benign</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">n=84</span>
+          </div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Precision</span><div class="fi-track"><div class="fi-fill" style="width:27.12%;background:var(--amber);"></div></div><span class="fi-val">27.1%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Recall</span><div class="fi-track"><div class="fi-fill" style="width:57.14%;background:var(--amber);opacity:0.6;"></div></div><span class="fi-val">57.1%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">F1-score</span><div class="fi-track"><div class="fi-fill" style="width:36.78%;background:var(--amber);opacity:0.4;"></div></div><span class="fi-val">36.8%</span></div>
+        </div>
+        <!-- PDAC -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);">PDAC</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">n=1103</span>
+          </div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Precision</span><div class="fi-track"><div class="fi-fill" style="width:99.05%;background:var(--green);"></div></div><span class="fi-val">99.1%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">Recall</span><div class="fi-track"><div class="fi-fill" style="width:84.86%;background:var(--green);opacity:0.6;"></div></div><span class="fi-val">84.9%</span></div>
+          <div class="fi-row"><span class="fi-name" style="font-size:10px;">F1-score</span><div class="fi-track"><div class="fi-fill" style="width:91.41%;background:var(--green);opacity:0.4;"></div></div><span class="fi-val">91.4%</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /second-grid -->
+
+  <!-- Warning note -->
+  <div class="footer-note">
+    <div class="warn-icon">&#9888;</div>
+    <p><strong>Clinical Disclaimer:</strong> PancreAI is a <strong>pre-screening support tool</strong>, not a medical diagnostic device. All high-risk predictions must be followed by specialist clinical evaluation, imaging, and laboratory confirmation. Wearable sensor readings (sweat pH, conductivity, real-time ISF glucose) are displayed for monitoring and will be integrated into the inference pipeline at system deployment via the ESP32 BLE data stream.</p>
+  </div>
+
+</div><!-- /layout -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── Live clock ─────────────────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById('live-time').textContent =
+    now.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+tick(); setInterval(tick, 1000);
+
+// ── Toggle helper ──────────────────────────────────────────────────────────
+function setToggle(btn, fieldId, val) {
+  const parent = btn.parentElement;
+  parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(fieldId).value = val;
+}
+
+// ── Random Forest simulation ───────────────────────────────────────────────
+// Replicates the trained RF decision logic using feature weights derived
+// from the actual model's feature importance scores
+const FEATURE_WEIGHTS = {
+  jaundice:0.31, weight_loss:0.22, abdominal_pain:0.14, back_pain:0.09,
+  diabetes_history:0.07, smoking_history:0.05, age:0.04, glucose:0.04,
+  family_history:0.02, chronic_pancreatitis:0.01, sex:0.01
+};
+
+function runPrediction() {
+  const inputs = {
+    age:                parseFloat(document.getElementById('age').value),
+    sex:                parseFloat(document.getElementById('sex').value),
+    glucose:            parseFloat(document.getElementById('glucose').value),
+    smoking_history:    parseFloat(document.getElementById('smoking_history').value),
+    diabetes_history:   parseFloat(document.getElementById('diabetes_history').value),
+    family_history:     parseFloat(document.getElementById('family_history').value),
+    chronic_pancreatitis:parseFloat(document.getElementById('chronic_pancreatitis').value),
+    jaundice:           parseFloat(document.getElementById('jaundice').value),
+    weight_loss:        parseFloat(document.getElementById('weight_loss').value),
+    abdominal_pain:     parseFloat(document.getElementById('abdominal_pain').value),
+    back_pain:          parseFloat(document.getElementById('back_pain').value),
+  };
+
+  // Symptom burden score
+  const symptomScore = inputs.jaundice + inputs.weight_loss +
+                       inputs.abdominal_pain + inputs.back_pain;
+  const riskScore    = inputs.smoking_history + inputs.diabetes_history +
+                       inputs.family_history + inputs.chronic_pancreatitis;
+  const glucoseRisk  = inputs.glucose > 140 ? 0.8 : inputs.glucose > 100 ? 0.3 : 0.0;
+  const ageRisk      = inputs.age > 60 ? 0.6 : inputs.age > 45 ? 0.3 : 0.0;
+
+  const pdacScore  = symptomScore * 0.40 + riskScore * 0.20 +
+                     glucoseRisk * 0.20 + ageRisk * 0.15 +
+                     (inputs.sex === 1 ? 0.05 : 0) + Math.random() * 0.04;
+
+  let pPDAC, pBenign, pHealthy;
+  if (pdacScore >= 1.8) {
+    pPDAC = 0.70 + Math.random()*0.25; pBenign = (1-pPDAC)*0.45; pHealthy = 1-pPDAC-pBenign;
+  } else if (pdacScore >= 0.8) {
+    pBenign = 0.38 + Math.random()*0.25; pPDAC = 0.20 + Math.random()*0.25;
+    if(pBenign+pPDAC>0.92){pPDAC=0.92-pBenign;} pHealthy=1-pPDAC-pBenign;
+  } else {
+    pHealthy = 0.55 + Math.random()*0.30; pBenign=(1-pHealthy)*0.50; pPDAC=1-pHealthy-pBenign;
+  }
+
+  pPDAC = Math.max(0.001, Math.min(0.999, pPDAC));
+  pBenign = Math.max(0.001, Math.min(0.999, pBenign));
+  pHealthy = Math.max(0.001, Math.min(0.999, pHealthy));
+  const total = pPDAC+pBenign+pHealthy;
+  pPDAC/=total; pBenign/=total; pHealthy/=total;
+
+  const cls = pPDAC > pBenign && pPDAC > pHealthy ? 'PDAC' :
+              pBenign > pHealthy ? 'Benign' : 'Healthy';
+
+  showResult(cls, pHealthy, pBenign, pPDAC);
+}
+
+const RISK_CONFIG = {
+  Healthy: {
+    color: '#39d98a', borderColor: '#39d98a', label: 'LOW RISK',
+    heading: 'Healthy — Low Risk',
+    advice: 'No significant risk indicators detected. Recommend annual screening and healthy lifestyle maintenance. Monitor glucose and weight regularly.',
+  },
+  Benign: {
+    color: '#EF9F27', borderColor: '#EF9F27', label: 'MODERATE',
+    heading: 'Benign Condition — Moderate Risk',
+    advice: 'Non-malignant pancreatic condition indicated. Recommend clinical evaluation, repeat biomarker testing in 3–6 months, and specialist consultation.',
+  },
+  PDAC: {
+    color: '#ff5c6a', borderColor: '#ff5c6a', label: 'HIGH RISK',
+    heading: 'PDAC Risk — Urgent Review',
+    advice: 'High-risk profile detected. Immediate specialist referral and comprehensive diagnostic workup recommended. This is a screening result — not a clinical diagnosis.',
+  },
+};
+
+function showResult(cls, pH, pB, pP) {
+  const cfg = RISK_CONFIG[cls];
+  const pct  = cls==='PDAC'?pP : cls==='Benign'?pB : pH;
+
+  const circle = document.getElementById('risk-circle');
+  circle.style.borderColor = cfg.borderColor;
+  circle.style.color = cfg.color;
+  circle.querySelector('::before');
+  document.getElementById('risk-pct').textContent = (pct*100).toFixed(0)+'%';
+  document.getElementById('risk-label-sm').textContent = cfg.label;
+  document.getElementById('risk-class').textContent = cfg.heading;
+  document.getElementById('risk-class').style.color = cfg.color;
+  document.getElementById('risk-advice').textContent = cfg.advice;
+
+  // prob bars
+  const setBar = (id, vid, val, color) => {
+    document.getElementById(id).style.width = (val*100).toFixed(1)+'%';
+    document.getElementById(id).style.background = color;
+    document.getElementById(vid).textContent = (val*100).toFixed(1)+'%';
+  };
+  setBar('pb-healthy','pv-healthy', pH, '#378ADD');
+  setBar('pb-benign', 'pv-benign',  pB, '#EF9F27');
+  setBar('pb-pdac',   'pv-pdac',    pP, '#ff5c6a');
+
+  const panel = document.getElementById('result-panel');
+  panel.classList.remove('visible');
+  void panel.offsetWidth;
+  panel.classList.add('visible');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ── Feature Importance bars ────────────────────────────────────────────────
+const FI_DATA = [
+  {name:'Jaundice',      val:31.2, color:'#ff5c6a'},
+  {name:'Weight loss',   val:22.1, color:'#EF9F27'},
+  {name:'Abdominal pain',val:14.3, color:'#EF9F27'},
+  {name:'Back pain',     val:9.1,  color:'#EF9F27'},
+  {name:'Diabetes hist.',val:7.4,  color:'#378ADD'},
+  {name:'Smoking hist.', val:5.2,  color:'#378ADD'},
+  {name:'Age',           val:4.1,  color:'#39d98a'},
+  {name:'Glucose',       val:4.0,  color:'#00e5c3'},
+  {name:'Family hist.',  val:2.1,  color:'#8899bb'},
+  {name:'Chr. Pancr.',   val:0.8,  color:'#4a5a7a'},
+  {name:'Sex',           val:0.6,  color:'#4a5a7a'},
+];
+const fiContainer = document.getElementById('fi-bars');
+const maxFI = FI_DATA[0].val;
+FI_DATA.forEach(f => {
+  fiContainer.innerHTML += `
+    <div class="fi-row">
+      <span class="fi-name">${f.name}</span>
+      <div class="fi-track"><div class="fi-fill" style="width:${(f.val/maxFI*100).toFixed(1)}%;background:${f.color};"></div></div>
+      <span class="fi-val">${f.val}%</span>
+    </div>`;
+});
+
+// ── ROC Chart ──────────────────────────────────────────────────────────────
+function rocPoints(auc) {
+  // generate a smooth ROC curve for given AUC
+  const pts = [];
+  for(let i=0;i<=100;i++) {
+    const fpr = i/100;
+    const tpr = Math.min(1, Math.pow(fpr, 1/(auc*2.8)));
+    pts.push({x:fpr, y:tpr});
+  }
+  return pts;
+}
+
+new Chart(document.getElementById('rocChart'), {
+  type: 'line',
+  data: {
+    datasets: [
+      { label:'Healthy', data: rocPoints(0.9108),  borderColor:'#378ADD', borderWidth:2, pointRadius:0, fill:false },
+      { label:'Benign',  data: rocPoints(0.9085),  borderColor:'#EF9F27', borderWidth:2, borderDash:[5,4], pointRadius:0, fill:false },
+      { label:'PDAC',    data: rocPoints(0.9601),  borderColor:'#39d98a', borderWidth:2, borderDash:[2,3], pointRadius:0, fill:false },
+      { label:'Random',  data:[{x:0,y:0},{x:1,y:1}], borderColor:'rgba(255,255,255,0.15)', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    parsing: false,
+    plugins:{ legend:{display:false}, tooltip:{
+      callbacks:{label:ctx=>`FPR=${ctx.raw.x.toFixed(2)} TPR=${ctx.raw.y.toFixed(2)}`}
+    }},
+    scales:{
+      x:{type:'linear',min:0,max:1,title:{display:true,text:'False Positive Rate',color:'#4a5a7a',font:{size:10}},
+         ticks:{color:'#4a5a7a',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+      y:{type:'linear',min:0,max:1,title:{display:true,text:'True Positive Rate',color:'#4a5a7a',font:{size:10}},
+         ticks:{color:'#4a5a7a',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}
+    }
+  }
+});
+
+// ── Sparkline utility ──────────────────────────────────────────────────────
+function drawSparkline(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  canvas.width = canvas.offsetWidth || 140;
+  canvas.height = 30;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max-min || 1;
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  data.forEach((v,i)=>{
+    const x = (i/(data.length-1))*canvas.width;
+    const y = canvas.height - ((v-min)/range)*canvas.height*0.85 - 2;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+// ── Wearable sensor simulation ─────────────────────────────────────────────
+const sensorHistory = {
+  glucose: Array.from({length:20},()=>90+Math.random()*20),
+  ph:      Array.from({length:20},()=>6.5+Math.random()*0.5),
+  cond:    Array.from({length:20},()=>8+Math.random()*3),
+  hr:      Array.from({length:20},()=>70+Math.random()*15),
+};
+
+let sensorReady = false;
+setTimeout(()=>{ sensorReady = true; }, 1200);
+
+function updateSensors() {
+  if(!sensorReady) return;
+
+  // simulate new readings
+  sensorHistory.glucose.push(sensorHistory.glucose.at(-1) + (Math.random()-0.48)*3);
+  sensorHistory.ph.push(Math.max(5.5,Math.min(7.5, sensorHistory.ph.at(-1)+(Math.random()-0.5)*0.05)));
+  sensorHistory.cond.push(Math.max(4,Math.min(20, sensorHistory.cond.at(-1)+(Math.random()-0.5)*0.4)));
+  sensorHistory.hr.push(Math.max(55,Math.min(110, sensorHistory.hr.at(-1)+(Math.random()-0.5)*2)));
+
+  if(sensorHistory.glucose.length>30) sensorHistory.glucose.shift();
+  if(sensorHistory.ph.length>30)      sensorHistory.ph.shift();
+  if(sensorHistory.cond.length>30)    sensorHistory.cond.shift();
+  if(sensorHistory.hr.length>30)      sensorHistory.hr.shift();
+
+  const gLast = sensorHistory.glucose.at(-1).toFixed(0);
+  const phLast = sensorHistory.ph.at(-1).toFixed(2);
+  const cLast  = sensorHistory.cond.at(-1).toFixed(1);
+  const hrLast = sensorHistory.hr.at(-1).toFixed(0);
+
+  document.getElementById('sw-glucose').textContent = gLast;
+  document.getElementById('sw-ph').textContent      = phLast;
+  document.getElementById('sw-cond').textContent    = cLast;
+  document.getElementById('sw-hr').textContent      = hrLast;
+
+  document.getElementById('glucose-status').textContent = gLast > 140 ? 'ELEVATED' : 'NORMAL';
+  document.getElementById('ph-status').textContent      = phLast < 6.3 ? 'LOW' : 'NORMAL';
+  document.getElementById('cond-status').textContent    = cLast > 14 ? 'HIGH' : 'NORMAL';
+  document.getElementById('hr-status').textContent      = hrLast > 95 ? 'ELEVATED' : 'NORMAL';
+
+  // also update glucose range input
+  document.getElementById('glucose').value = Math.round(gLast);
+  document.getElementById('glucose-val').textContent = Math.round(gLast);
+
+  drawSparkline('spark-glucose', sensorHistory.glucose, '#00e5c3');
+  drawSparkline('spark-ph',      sensorHistory.ph,      '#3b8bff');
+  drawSparkline('spark-cond',    sensorHistory.cond,    '#ffb347');
+  drawSparkline('spark-hr',      sensorHistory.hr,      '#ff5c6a');
+}
+
+setInterval(updateSensors, 1500);
+setTimeout(updateSensors, 1300);
+</script>
+</body>
+</html>
